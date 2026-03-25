@@ -1,18 +1,26 @@
-meme_dict = {
-            "CRINGE": "Algo excepcionalmente raro o embarazoso",
-            "LOL": "Una respuesta común a algo gracioso",
-            "ROFL": "una respuesta a una broma",
-            "SHEESH": "ligera desaprobación",
-            "CREEPY": "aterrador, siniestro",
-            "AGGRO": "ponerse agresivo/enojado"
-            }
-for i in range(5):
-    word = input("Escribe una palabra que no entiendas: ").upper()
+import discord
+from discord.ext import commands
+import random
 
-    if word in meme_dict:
-        # Si la palabra existe
-        print(meme_dict[word])
-    else:
-        # Si la palabra no existe
-        print("No conocemos esa palabra.")
+intents = discord.Intents.default()
+intents.message_content = True
 
+bot = commands.Bot(command_prefix='?', intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f'Conectado como {bot.user}') 
+    channel = bot.get_channel(123456789012345678) 
+    if channel:
+        await channel.send("¡Ya estoy aquí! Pasen el café. ☕")
+@bot.command()
+async def add(ctx, left: int, right: int):
+    await ctx.send(left + right)
+@bot.command()
+async def roll(ctx, dice: str):
+    try:
+        rolls, limit = map(int, dice.split('d'))
+        result = ', '.join(str(random.randint(1, limit)) for _ in range(rolls))
+        await ctx.send(result)
+    except Exception:
+        await ctx.send('Formato debe ser NdN (ejemplo: 2d6)')
