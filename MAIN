@@ -2,25 +2,104 @@ import discord
 from discord.ext import commands
 import random
 
-intents = discord.Intents.default()
-intents.message_content = True
+# --- CONFIGURACIÓN DEL BOT ---
+class EcoBot(commands.Bot):
+    def __init__(self):
+        # Intents necesarios para leer mensajes y miembros
+        intents = discord.Intents.all()
+        super().__init__(command_prefix="!", intents=intents)
+        
+        # Diccionario de retos: Emoji -> Descripción detallada
+        self.retos_eco = {
+            "🥤": "Hoy no utilices pitillos (pajillas) ni cubiertos de plástico.",
+            "🔌": "Desconecta el cargador del celular y la TV si no los estás usando.",
+            "💡": "Apaga las luces de las habitaciones donde no haya nadie.",
+            "🚿": "Reduce tu ducha a solo 5 minutos para ahorrar litros de agua.",
+            "🛍️": "Usa una bolsa de tela en lugar de pedir una de plástico en la tienda.",
+            "♻️": "Separa el papel y el cartón de la basura común hoy."
+        }
+        
+        self.videos = [
+            "https://www.youtube.com/watch?v=nvUqnpicSd0", 
+            "https://www.youtube.com/watch?v=3S0lE6XqKRA"
+        ]
 
-bot = commands.Bot(command_prefix='?', intents=intents)
+    async def on_ready(self):
+        print("-------------------------------")
+        print(f"✅ CONECTADO COMO: {self.user}")
+        print(f"LATENCIA: {round(self.latency * 1000)}ms")
+        print("-------------------------------")
 
-@bot.event
-async def on_ready():
-    print(f'Conectado como {bot.user}') 
-    channel = bot.get_channel(123456789012345678) 
-    if channel:
-        await channel.send("¡Ya estoy aquí! Pasen el café. ☕")
+# --- INSTANCIA ---
+bot = EcoBot()
+
+# 1. SALUDO
+@bot.command(aliases=["hi", "hola"])
+async def hello(ctx): 
+    await ctx.send("👋 ¡Hola! Soy tu asistente ecológico. Usa `!reto` para ayudar al planeta.")
+
+# 2. RETO ECOLÓGICO (Ahora con texto y emoji)
+@bot.command(aliases=["retos", "challenge"])
+async def reto(ctx): 
+    emoji, descripcion = random.choice(list(bot.retos_eco.items()))
+    mensaje = f"🌱 **RETO ECOLÓGICO DEL DÍA** {emoji}\n> {descripcion}"
+    await ctx.send(mensaje)
+
+# 3. LANZAR MONEDA
+@bot.command(aliases=["flip", "cara_o_cruz"])
+async def moneda(ctx): 
+    resultado = random.choice(["Cara 🪙", "Cruz ❌"])
+    await ctx.send(f"🪙 La moneda cayó en: **{resultado}**")
+
+# 4. PING
 @bot.command()
-async def add(ctx, left: int, right: int):
-    await ctx.send(left + right)
-@bot.command()
-async def roll(ctx, dice: str):
-    try:
-        rolls, limit = map(int, dice.split('d'))
-        result = ', '.join(str(random.randint(1, limit)) for _ in range(rolls))
-        await ctx.send(result)
-    except Exception:
-        await ctx.send('Formato debe ser NdN (ejemplo: 2d6)')
+async def ping(ctx):
+    ms = round(bot.latency * 1000)
+    await ctx.send(f"🏓 **{ms}ms**")
+
+# 5. VIDEO AMBIENTAL
+@bot.command(aliases=["video", "eco_video"])
+async def video_eco(ctx): 
+    await ctx.send(f"📹 Mira este video sobre el medio ambiente: {random.choice(bot.videos)}")
+
+# 6. GENERADOR DE CONTRASEÑA (Corregido con alias 'contraseña')
+@bot.command(aliases=["contraseña", "pass", "clave"])
+async def password(ctx):
+    chars = "+-/*!&$#?=@abcdefghijk1234567890"
+    p = "".join(random.choice(chars) for _ in range(12))
+    await ctx.send(f"🔑 Tu nueva contraseña es: `{p}`")
+
+# 7. DADO
+@bot.command(aliases=["dados", "roll"])
+async def dado(ctx): 
+    valor = random.randint(1, 6)
+    await ctx.send(f"🎲 Has sacado un: **{valor}**")
+
+# 8. LIMPIEZA DE CHAT
+@bot.command(aliases=["clear", "borrar"])
+@commands.has_permissions(manage_messages=True)
+async def limpiar(ctx, n: int = 5): 
+    await ctx.channel.purge(limit=n + 1)
+    await ctx.send(f"🗑️ Se han borrado {n} mensajes.", delete_after=3)
+
+# 9. DECIDIR
+@bot.command(aliases=["choose", "escoger"])
+async def decidir(ctx, *opciones):
+    if len(opciones) >= 2: 
+        await ctx.send(f"🤔 Yo elijo: **{random.choice(opciones)}**")
+    else:
+        await ctx.send("❌ Necesito al menos 2 opciones. Ejemplo: `!decidir Helado Pizza`.")
+
+# 10. INFO DEL SERVIDOR
+@bot.command(aliases=["info", "server"])
+async def serverinfo(ctx): 
+    await ctx.send(f"ℹ️ **Servidor:** {ctx.guild.name}\n👥 **Miembros:** {ctx.guild.member_count}")
+
+# --- EJECUCIÓN ---
+try:
+    # RECUERDA: Pon tu Token aquí. Si el anterior te dio error, genera uno nuevo (Reset Token)
+    bot.run("tu token")
+except discord.errors.LoginFailure:
+    print("❌ ERROR: El Token es inválido o Discord lo bloqueó por seguridad.")
+except Exception as e:
+    print(f"❌ ERROR INESPERADO: {e}")
